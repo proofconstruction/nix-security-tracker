@@ -4,6 +4,8 @@
   pkgs ? import sources.nixpkgs { overlays = [ overlay ]; },
 }:
 let
+  helpers = pkgs.callPackage ./nix/helpers.nix { };
+
   self = rec {
     inherit (pkgs) python3;
     localPythonPackages = import ./pkgs { inherit pkgs python3; };
@@ -77,37 +79,30 @@ let
         };
     };
 
-    shell =
-      let
-        manage = pkgs.writeScriptBin "manage" ''
-          ${python3}/bin/python ${toString ./src/website/manage.py} $@
-        '';
-      in
-      pkgs.mkShell {
-        DATA_CACHE_DIRECTORY = toString ./. + "/.data_cache";
-        REDIS_SOCKET_URL = "unix:///run/redis/redis.sock";
-        # `./src/website/tracker/settings.py` by default looks for LOCAL_NIXPKGS_CHECKOUT
-        # in the root of the repo. Make it the default here for local development.
-        LOCAL_NIXPKGS_CHECKOUT = toString ./. + "/nixpkgs";
+    shell = pkgs.mkShell {
+      DATA_CACHE_DIRECTORY = toString ./. + "/.data_cache";
+      REDIS_SOCKET_URL = "unix:///run/redis/redis.sock";
+      # `./src/website/tracker/settings.py` by default looks for LOCAL_NIXPKGS_CHECKOUT
+      # in the root of the repo. Make it the default here for local development.
+      LOCAL_NIXPKGS_CHECKOUT = toString ./. + "/nixpkgs";
 
-        packages = [
-          manage
-          package
-          pkgs.nix-eval-jobs
-          pkgs.commitizen
-          pkgs.npins
-          pkgs.nixfmt
-          pkgs.hivemind
-        ];
+      packages = [
+        package
+        pkgs.nix-eval-jobs
+        pkgs.commitizen
+        pkgs.npins
+        pkgs.nixfmt
+        pkgs.hivemind
+      ] ++ (with pkgs.lib; collect isDerivation helpers);
 
-        shellHook = ''
-          ${pre-commit-check.shellHook}
+      shellHook = ''
+        ${pre-commit-check.shellHook}
 
-          mkdir -p .credentials
-          export DATABASE_URL=postgres:///nix-security-tracker
-          export CREDENTIALS_DIRECTORY=${builtins.toString ./.credentials}
-        '';
-      };
+        mkdir -p .credentials
+        export DATABASE_URL=postgres:///nix-security-tracker
+        export CREDENTIALS_DIRECTORY=${builtins.toString ./.credentials}
+      '';
+    };
 
     tests = import ./nix/tests/vm-basic.nix {
       inherit pkgs;

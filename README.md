@@ -28,6 +28,20 @@ services.postgresql.ensureUsers = [{
 }];
 ```
 
+Using the OAuth login feature requires real GitHub credentials, but for faster development you can set fake secret values required by the server:
+
+On the very first setup:
+
+```console
+initialSetup
+```
+
+Or, if you've already created the `.credentials` directory and fake secrets:
+
+```console
+setup
+```
+
 ### Set up GitHub authentication
 
 1. Create a new or select an existing GitHub organisation to associate with the application
@@ -52,16 +66,6 @@ services.postgresql.ensureUsers = [{
 
      Store the value in `.credentials/GH_SECRET`
 
-You only need real GitHub credentials to use the OAuth login feature.
-To get going quickly, set any values for secrets required by the server:
-
-```console
-mkdir .credentials
-echo foo > .credentials/SECRET_KEY
-echo bar > .credentials/GH_CLIENT_ID
-echo baz > .credentials/GH_SECRET
-```
-
 ### Set up Github App webhooks
 
 For now, we require a GitHub webhook to receive push notifications when team memberships change.
@@ -75,12 +79,12 @@ To configure the GitHub app and the webhook in the GitHub organisation settings:
     - Deselect **Pushes**.
     - Select **Memberships**.
 
-## Reseting the database
+## Resetting the database
 
 Set up the database with known-good values to play around with:
 
 ```console
-./contrib/reset.sh
+reset
 ```
 
 Start the server and its workers:
